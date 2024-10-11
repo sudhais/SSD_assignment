@@ -1,3 +1,15 @@
+<?php
+  session_start();
+
+  // Generate CSRF token if not set
+  if (empty($_SESSION['csrf_token'])) {
+      $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+  }
+
+    // Set the Content Security Policy header
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';");
+ ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,7 +24,7 @@
     <nav class="navbar navbar-expand-lg bg-body-tertiary" >
         <div class="container-fluid">
           <a class="navbar-brand" href="#">
-            <img src="../img/csquared.png" width="100" height="30" alt="logo">
+            <img src="../../img/csquared.png" width="100" height="30" alt="logo">
           </a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -20,23 +32,24 @@
           <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="../php/customer/viewCustomer.php">Customer</a>
+                <a class="nav-link active" aria-current="page" href="./viewCustomer.php">Customer</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="../php/item/viewItem.php">Item</a>
+                <a class="nav-link" href="../item/viewItem.php">Item</a>
               </li>
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                   Reports
                 </a>
                 <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="../php/reports/invoiceReport.php">Invoice Report</a></li>
-                  <li><a class="dropdown-item" href="../php/reports/invoiceItemReport.php">Invoice Item Report</a></li>
-                  <li><a class="dropdown-item" href="../php/reports/itemReport.php">Item Report</a></li>
+                  <li><a class="dropdown-item" href="../reports/invoiceReport.php">Invoice Report</a></li>
+                  <li><a class="dropdown-item" href="../reports/invoiceItemReport.php">Invoice Item Report</a></li>
+                  <li><a class="dropdown-item" href="../reports/itemReport.php">Item Report</a></li>
                 </ul>
               </li>
             </ul>
             <form class="d-flex" role="search">
+              <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars('sdfsdf'); ?>">
               <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
               <button class="btn btn-outline-success" type="submit">Search</button>
             </form>
@@ -49,8 +62,8 @@
   </div>
     <div class="container">
       
-    <form action="../php/customer/addCustomer.php" method="post">
-		<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+    <form action="./addCustomer.php" method="post">
+		  <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
         <label for="title" class="form-label">Title: </label>
         <select name="title" class="form-select" id="title" required>
             <option value="Mr">Mr</option>

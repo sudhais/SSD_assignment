@@ -1,7 +1,14 @@
 <?php
 
-// Set the X-Content-Type-Options header to 'nosniff' for security
-header("X-Content-Type-Options: nosniff");
+session_start();
+
+// Generate CSRF token if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Set the Content Security Policy header
+header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';");
 
 // Check if 'id' is set in the query string and sanitize it
 $id = isset($_GET['id']) ? filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT) : null;
@@ -10,35 +17,64 @@ if (!$id) {
     die('Invalid customer ID.');
 }
 
-if (isset($_POST['sbm_edit'])) {
-    $title = $_POST["title"];
-    $fname = $_POST["fname"];
-    $mname = $_POST["mname"];
-    $lname = $_POST["lname"];
-    $contactNum = $_POST["contactNum"];
-    $district = $_POST["district"];
-
-    require("../config.php");
-
-    // Prepare the update statement
-    $sql = "UPDATE customer SET title = ?, first_name = ?, middle_name = ?, last_name = ?, contact_no = ?, district = ? WHERE id = ?";
-    $stmt = $con->prepare($sql);
-
-    // Bind the parameters
-    $stmt->bind_param('ssssssi', $title, $fname, $mname, $lname, $contactNum, $district, $id);
-
-    // Execute the statement
-    if ($stmt->execute()) {
-        header('Location: viewCustomer.php');
-        exit();
-    } else {
-        echo "Error: " . $stmt->error;
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Check if CSRF token is present in the form and if it matches the session token
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        // If the token is missing or doesn't match, stop execution and show an error
+        die("Error: Invalid CSRF token.");
     }
 
-    // Close the statement
-    $stmt->close();
-    $con->close();
+    if (isset($_POST['sbm_edit'])) {
+
+      require "../config.php";
+
+        // Check if all required fields are set
+        $required_fields = ['title', 'fname', 'mname', 'lname', 'contactNum', 'district'];
+        foreach ($required_fields as $field) {
+            if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
+                die("Error: All required fields must be filled.");
+            }
+        }
+
+        // Sanitize input data to prevent SQL Injection and ensure safe output
+        $title = $con->real_escape_string(trim($_POST["title"]));
+        $fname = $con->real_escape_string(trim($_POST["fname"]));
+        $mname = $con->real_escape_string(trim($_POST["mname"]));
+        $lname = $con->real_escape_string(trim($_POST["lname"]));
+        $contactNum = $con->real_escape_string(trim($_POST["contactNum"]));
+        $district = $con->real_escape_string(trim($_POST["district"]));
+
+        
+
+        // Validate contact number (e.g., ensuring it's numeric)
+        if (!is_numeric($contactNum) || strlen($contactNum) > 10) {
+            echo "Invalid contact number.";
+            exit;
+        }
+
+        
+
+        // Prepare the update statement
+        $sql = "UPDATE customer SET title = ?, first_name = ?, middle_name = ?, last_name = ?, contact_no = ?, district = ? WHERE id = ?";
+        $stmt = $con->prepare($sql);
+
+        // Bind the parameters
+        $stmt->bind_param('ssssssi', $title, $fname, $mname, $lname, $contactNum, $district, $id);
+
+        // Execute the statement
+        if ($stmt->execute()) {
+            header('Location: viewCustomer.php');
+            exit();
+        } else {
+            echo "Error: " . $stmt->error;
+        }
+
+        // Close the statement
+        $stmt->close();
+        $con->close();
+    }
 }
+
 ?>
 
 <?php
@@ -49,7 +85,7 @@ if (!$id) {
     die('Invalid customer ID.');
 }
 
-require("../config.php");
+require "../config.php";
 
 // Prepare the select statement
 $sql1 = "SELECT * FROM customer WHERE id = ?";
@@ -121,6 +157,7 @@ $con->close();
               </li>
             </ul>
             <form class="d-flex" role="search">
+              <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
               <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
               <button class="btn btn-outline-success" type="submit">Search</button>
             </form>
@@ -134,26 +171,27 @@ $con->close();
   </div>
   <div class="container">
     <form action="" method="post">
+      <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
         <label for="title" class="form-label">Title: </label>
-        <select name="title" class="form-select" value="<?php echo $title;?>" id="title">
+        <select name="title" class="form-select" value="<?php echo $title; ?>" id="title">
             <option value="Mr">Mr</option>
             <option value="Mrs">Mrs</option>
             <option value="Miss">Miss</option>
             <option value="Dr">Dr</option>
         </select>
-        
+
         <label for="fname" class="form-label">First Name: </label>
-        <input type="text" class="form-control" value="<?php echo $fname;?>" id="fname" name="fname">
-        
+        <input type="text" class="form-control" value="<?php echo $fname; ?>" id="fname" name="fname">
+
         <label for="mname" class="form-label">Middle Name: </label>
-        <input type="text" class="form-control" value="<?php echo $mname;?>" id="mname" name="mname">
-        
+        <input type="text" class="form-control" value="<?php echo $mname; ?>" id="mname" name="mname">
+
         <label for="lname" class="form-label">Last Name: </label>
-        <input type="text" class="form-control" value="<?php echo $lname;?>" id="lname" name="lname">
-       
+        <input type="text" class="form-control" value="<?php echo $lname; ?>" id="lname" name="lname">
+
         <label for="contactNum" class="form-label">Contact Number: </label>
-        <input type="text" class="form-control" value="<?php echo $contactNum;?>" id="contactNum" name="contactNum">
-        
+        <input type="text" class="form-control" value="<?php echo $contactNum; ?>" id="contactNum" name="contactNum">
+
         <label for="district" class="form-label">District: </label>
         <select name="district" class="form-select" id="district">
             <option value="1">Ampara</option>
@@ -182,7 +220,7 @@ $con->close();
             <option value="24">Rathnapura</option>
             <option value="25">Vavuniya</option>
         </select>
-        
+
         <input type="submit" class="btn btn-primary" style="margin-left: 90%; margin-top: 20px;" name="sbm_edit" value="Update">
     </form>
 

@@ -1,44 +1,84 @@
 <?php
-    $id = $_GET['id'];
+
+  session_start();
+
+  // Generate CSRF token if not set
+  if (empty($_SESSION['csrf_token'])) {
+      $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+  }
+
+  // Set the Content Security Policy header
+  header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';");
+
+  // Check if 'id' is set in the query string and sanitize it
+  $id = isset($_GET['id']) ? filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT) : null;
+
+  if (!$id) {
+      die('Invalid customer ID.');
+  }
+
+
+  // Check if the request method is POST
+  if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+    // Check if CSRF token is present in the form and if it matches the session token
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+      // If the token is missing or doesn't match, stop execution and show an error
+      die("Error: Invalid CSRF token.");
+    }
+
 
     if (isset($_POST['sbm_edit'])) {
-        $icode = $_POST["icode"];
-        $category = $_POST["category"];
-        $subcategory = $_POST["subcategory"];
-        $iname = $_POST["iname"];
-        $quantity = $_POST["quantity"];
-        $uprice = $_POST["uprice"];
 
-        require("../config.php");
+      require("../config.php");
 
-        // Prepare the SQL statement to prevent SQL injection
-        $sql = "UPDATE item SET item_code = ?, item_category = ?, item_subcategory = ?, item_name = ?, quantity = ?, unit_price = ? WHERE id = ?";
+      // Check if all required fields are set
+      $required_fields = ['icode', 'category', 'subcategory', 'iname', 'quantity', 'uprice'];
+      foreach ($required_fields as $field) {
+          if (!isset($_POST[$field]) || empty(trim($_POST[$field]))) {
+              die("Error: All required fields must be filled.");
+          }
+      }
 
-        // Prepare and bind
-        if ($stmt = $con->prepare($sql)) {
-            // Bind parameters (s for string, i for integer, d for double)
-            $stmt->bind_param("ssssssi", $icode, $category, $subcategory, $iname, $quantity, $uprice, $id);
+      // Sanitize input data to prevent SQL Injection and ensure safe output
+      $icode = $con->real_escape_string(trim($_POST["icode"]));
+      $category = $con->real_escape_string(trim($_POST["category"]));
+      $subcategory = $con->real_escape_string(trim($_POST["subcategory"]));
+      $iname = $con->real_escape_string(trim($_POST["iname"]));
+      $quantity = $con->real_escape_string(trim($_POST["quantity"]));
+      $uprice = $con->real_escape_string(trim($_POST["uprice"]));
 
-            // Execute the query
-            if ($stmt->execute()) {
-                header('Location: viewItem.php');
-                echo "
-                <script>
-                  alert('Update Successful');
-                </script>";
-            } else {
-                echo "Error: " . $stmt->error;
-            }
+      // Prepare the SQL statement to prevent SQL injection
+      $sql = "UPDATE item SET item_code = ?, item_category = ?, item_subcategory = ?, item_name = ?, quantity = ?, unit_price = ? WHERE id = ?";
 
-            // Close the statement
-            $stmt->close();
-        } else {
-            echo "Error: " . $con->error;
-        }
+      // Prepare and bind
+      if ($stmt = $con->prepare($sql)) {
+          // Bind parameters (s for string, i for integer, d for double)
+          $stmt->bind_param("ssssssi", $icode, $category, $subcategory, $iname, $quantity, $uprice, $id);
 
-        // Close the connection
-        $con->close();
+          // Execute the query
+          if ($stmt->execute()) {
+              header('Location: viewItem.php');
+              echo "
+              <script>
+                alert('Update Successful');
+              </script>";
+          } else {
+              echo "Error: " . $stmt->error;
+          }
+
+          // Close the statement
+          $stmt->close();
+      } else {
+          echo "Error: " . $con->error;
+      }
+
+      // Close the connection
+      $con->close();
     }
+  }
+
+   
 ?>
 
 <?php
@@ -118,6 +158,7 @@
               </li>
             </ul>
             <form class="d-flex" role="search">
+             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
               <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
               <button class="btn btn-outline-success" type="submit">Search</button>
             </form>
@@ -130,6 +171,7 @@
 </div>
 <div class="container">
 <form action="" method="post">
+  <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
         <label for="icode" class="form-label">Item Code: </label>
         <input type="text" class="form-control" value="<?php echo $icode;?>" id="icode" name="icode">
         

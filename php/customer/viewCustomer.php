@@ -1,4 +1,15 @@
 <?php
+
+  session_start();
+
+  // Generate CSRF token if not set
+  if (empty($_SESSION['csrf_token'])) {
+      $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+  }
+
+  // Set the Content Security Policy header
+  header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';");
+
     require("../config.php");
     
     $districtArr = array('Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar', 'Matale', 'Matara', 'Moneragala', 'Mullaitivu', 'Nuwara Eliya', 'Polonnaruwa', 'Puttalam', 'Rathnapura', 'Vavuniya');
@@ -90,6 +101,7 @@
               </li>
             </ul>
             <form class="d-flex" role="search">
+              <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
               <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
               <button class="btn btn-outline-success" type="submit">Search</button>
             </form>
@@ -115,7 +127,7 @@
         </table>
         
         
-        <a href="../../html/customer.html" class="btn btn-primary" style="margin-left:85%">Add Customer</a>
+        <a href="./customer.php" class="btn btn-primary" style="margin-left:85%">Add Customer</a>
     </div>
 
 

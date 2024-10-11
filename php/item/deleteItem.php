@@ -1,4 +1,8 @@
 <?php
+
+    // Set the Content Security Policy header
+  header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';");
+  
     require("../config.php");
     $id = $_GET['id'];
 
