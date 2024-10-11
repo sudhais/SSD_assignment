@@ -48,6 +48,10 @@
       $quantity = $con->real_escape_string(trim($_POST["quantity"]));
       $uprice = $con->real_escape_string(trim($_POST["uprice"]));
 
+      if (!$icode) {
+        die('Invalid item code.');
+      }
+
       // Prepare the SQL statement to prevent SQL injection
       $sql = "UPDATE item SET item_code = ?, item_category = ?, item_subcategory = ?, item_name = ?, quantity = ?, unit_price = ? WHERE id = ?";
 
