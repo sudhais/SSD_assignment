@@ -14,16 +14,16 @@
             //read data
             while($row = $result->fetch_assoc()){
                 //read and utilize the row data
-                $id = $row['id'];
-                $title =$row['title'];
-                $fname = $row['first_name'];
-                $mname = $row['middle_name'];
-                $lname = $row['last_name'];
-                $contactNum = $row['contact_no'];
-                $district = $row['district'];
+                $id = htmlspecialchars($row['id']);
+				$title = htmlspecialchars($row['title']);
+				$fname = htmlspecialchars($row['first_name']);
+				$mname = htmlspecialchars($row['middle_name']);
+				$lname = htmlspecialchars($row['last_name']);
+				$contactNum = htmlspecialchars($row['contact_no']);
+				$district = htmlspecialchars($row['district']);
 
-                $fullName = $title.'.'.' '.$fname.' '.$mname.' '.$lname;
-                $district = $districtArr[$district - 1];
+				$fullName = htmlspecialchars($title.'.'.' '.$fname.' '.$mname.' '.$lname);
+				$district = htmlspecialchars($districtArr[$district - 1]);
 
                 echo "<tr>
                 <td>".$id."</td>

@@ -1,7 +1,7 @@
 <?php
     $id = $_GET['id'];
 
-    if(isset($_POST['sbm_edit'])){
+    if (isset($_POST['sbm_edit'])) {
         $icode = $_POST["icode"];
         $category = $_POST["category"];
         $subcategory = $_POST["subcategory"];
@@ -11,44 +11,73 @@
 
         require("../config.php");
 
-        $sql = "UPDATE item SET id='$id', item_code= '$icode', item_category='$category', item_subcategory='$subcategory', item_name='$iname',quantity='$quantity',unit_price='$uprice' WHERE id=$id";
-        $con->query($sql);
+        // Prepare the SQL statement to prevent SQL injection
+        $sql = "UPDATE item SET item_code = ?, item_category = ?, item_subcategory = ?, item_name = ?, quantity = ?, unit_price = ? WHERE id = ?";
 
-        if($con->query($sql)){
-            header('Location: viewItem.php');
-            echo "
-            <script>
-              alert('Hellow World');
-            </script>
-        "; 
-        }else{
-            echo "error".$con->error;
+        // Prepare and bind
+        if ($stmt = $con->prepare($sql)) {
+            // Bind parameters (s for string, i for integer, d for double)
+            $stmt->bind_param("ssssssi", $icode, $category, $subcategory, $iname, $quantity, $uprice, $id);
+
+            // Execute the query
+            if ($stmt->execute()) {
+                header('Location: viewItem.php');
+                echo "
+                <script>
+                  alert('Update Successful');
+                </script>";
+            } else {
+                echo "Error: " . $stmt->error;
+            }
+
+            // Close the statement
+            $stmt->close();
+        } else {
+            echo "Error: " . $con->error;
         }
 
+        // Close the connection
+        $con->close();
     }
 ?>
 
 <?php
-     //edit
+    // Edit: Fetch data for the item
     $id = $_GET['id'];
-    $sql1 = "SELECT * FROM item WHERE id = $id";
+    $sql1 = "SELECT * FROM item WHERE id = ?";
+
     require("../config.php");
 
-    $result1 = $con->query($sql1);
+    // Prepare the SQL statement
+    if ($stmt = $con->prepare($sql1)) {
+        // Bind the parameter (i for integer)
+        $stmt->bind_param("i", $id);
 
-    while($row = $result1->fetch_array()){
+        // Execute the statement
+        $stmt->execute();
 
-        $id = $row['id'];
-        $icode =$row['item_code'];
-        $category = $row['item_category'];
-        $subcategory = $row['item_subcategory'];
-        $iname = $row['item_name'];
-        $quantity = $row['quantity'];
-        $uprice = $row['unit_price'];
+        // Fetch the result
+        $result1 = $stmt->get_result();
+        
+        if ($row = $result1->fetch_assoc()) {
+            $icode = $row['item_code'];
+            $category = $row['item_category'];
+            $subcategory = $row['item_subcategory'];
+            $iname = $row['item_name'];
+            $quantity = $row['quantity'];
+            $uprice = $row['unit_price'];
+        }
+
+        // Close the statement
+        $stmt->close();
+    } else {
+        echo "Error: " . $con->error;
     }
 
-    
+    // Close the connection
+    $con->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

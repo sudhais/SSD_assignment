@@ -4,63 +4,84 @@
     function invoiceItemReport(){
         global $con;
 
+        // Set default date range
         $start = '2000-01-01';
-        $to = date('Y').'-'.date('m').'-'.date('d');
+        $to = date('Y-m-d');  // Use the correct format for the current date
 
-        if(isset($_POST['sbm_search'])){
+        // Check if form is submitted
+        if (isset($_POST['sbm_search'])) {
             $start = $_POST['start'];
             $to = $_POST['to'];
         }
 
-        
-        $sql = "SELECT i.id, i.invoice_no, i.date,c.title, c.first_name, c.middle_name, c.last_name, it.item_name, it.item_code, ic.category, it.unit_price FROM invoice i, invoice_master im, item it, customer c, item_category ic WHERE i.invoice_no = im.invoice_no AND im.item_id = it.id AND i.customer = c.id AND ic.id = it.item_category AND date BETWEEN '$start' AND '$to'";
-    
-        $result = $con->query($sql);
-    
-        if($result->num_rows > 0){
-            //read data
-            while($row = $result->fetch_assoc()){
-                //read and utilize the row data
-                $id = $row['id'];
-                $invoiceNo =$row['invoice_no'];
-                $date = $row['date'];
-                $title = $row['title'];
-                $fname = $row['first_name'];
-                $mname = $row['middle_name'];
-                $lname = $row['last_name'];
-                $iName = $row['item_name'];
-                $iCode = $row['item_code'];
-                $iCategory = $row['category'];
-                $uprice = $row['unit_price'];
+        // Prepare the SQL statement with placeholders to avoid SQL injection
+        $sql = "SELECT i.id, i.invoice_no, i.date, c.title, c.first_name, c.middle_name, c.last_name, 
+                it.item_name, it.item_code, ic.category, it.unit_price 
+                FROM invoice i 
+                JOIN invoice_master im ON i.invoice_no = im.invoice_no 
+                JOIN item it ON im.item_id = it.id 
+                JOIN customer c ON i.customer = c.id 
+                JOIN item_category ic ON ic.id = it.item_category 
+                WHERE i.date BETWEEN ? AND ?";
 
-                $fullName = $title.'.'.' '.$fname.' '.$mname.' '.$lname;
-                $itemNC = $iCode.'-'.$iName;
+        // Prepare the statement
+        if ($stmt = $con->prepare($sql)) {
+            // Bind parameters to the query (s for string as dates are strings)
+            $stmt->bind_param("ss", $start, $to);
 
+            // Execute the statement
+            $stmt->execute();
 
+            // Get the result
+            $result = $stmt->get_result();
+
+            // Check if rows are returned
+            if ($result->num_rows > 0) {
+                // Loop through each row
+                while ($row = $result->fetch_assoc()) {
+                    $id = htmlspecialchars($row['id']);
+                    $invoiceNo = htmlspecialchars($row['invoice_no']);
+                    $date = htmlspecialchars($row['date']);
+                    $title = htmlspecialchars($row['title']);
+                    $fname = htmlspecialchars($row['first_name']);
+                    $mname = htmlspecialchars($row['middle_name']);
+                    $lname = htmlspecialchars($row['last_name']);
+                    $iName = htmlspecialchars($row['item_name']);
+                    $iCode = htmlspecialchars($row['item_code']);
+                    $iCategory = htmlspecialchars($row['category']);
+                    $uprice = htmlspecialchars($row['unit_price']);
+
+                    $fullName = $title . '.' . ' ' . $fname . ' ' . $mname . ' ' . $lname;
+                    $itemNC = $iCode . '-' . $iName;
+
+                    // Output the data as HTML table rows
+                    echo "<tr>
+                        <td>" . htmlspecialchars($invoiceNo) . "</td>
+                        <td>" . htmlspecialchars($date) . "</td>
+                        <td>" . htmlspecialchars($fullName) . "</td>
+                        <td>" . htmlspecialchars($itemNC) . "</td>
+                        <td>" . htmlspecialchars($iCategory) . "</td>
+                        <td>" . htmlspecialchars($uprice) . "</td>
+                    </tr>";
+                }
+            } else {
+                // Display empty row if no results
                 echo "<tr>
-                <td>".$invoiceNo."</td>
-                <td>".$date."</td>
-                <td>".$fullName."</td>
-                <td>".$itemNC."</td>
-                <td>".$iCategory."</td>
-                <td>".$uprice."</td>
-                
-            </tr>";
+                    <td colspan='6'>No results found</td>
+                </tr>";
+            }
 
+            // Close the statement
+            $stmt->close();
+        } else {
+            echo "Error: " . $con->error;
         }
-        }else{
-            echo "<tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                
-            </tr>";
-        }
+
+        // Close the connection (optional, but good practice)
+        $con->close();
     }
-
 ?>
+
 <!DOCTYPE html>
 <html>
 

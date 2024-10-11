@@ -3,41 +3,51 @@
 
     function itemReport(){
         global $con;
-        global $districtArr;
-        $sql = "SELECT i.item_name, ic.category, isc.sub_category, i.quantity FROM item i, item_category ic, item_subcategory isc WHERE i.item_category = ic.id AND i.item_subcategory = isc.id;";
-    
-        $result = $con->query($sql);
-    
-        if($result->num_rows > 0){
-            //read data
-            while($row = $result->fetch_assoc()){
-                //read and utilize the row data
-                $iName = $row['item_name'];
-                $category =$row['category'];
-                $subCategory = $row['sub_category'];
-                $quantity = $row['quantity'];
 
+        // Prepare the SQL statement
+        $sql = "SELECT i.item_name, ic.category, isc.sub_category, i.quantity 
+                FROM item i 
+                JOIN item_category ic ON i.item_category = ic.id 
+                JOIN item_subcategory isc ON i.item_subcategory = isc.id";
+
+        // Prepare and execute the query
+        if ($stmt = $con->prepare($sql)) {
+            $stmt->execute();
+
+            // Get the result set from the prepared statement
+            $result = $stmt->get_result();
+
+            if ($result->num_rows > 0) {
+                // Read data
+                while ($row = $result->fetch_assoc()) {
+                    // Read and utilize the row data
+                    $iName = htmlspecialchars($row['item_name']);
+                    $category = htmlspecialchars($row['category']);
+                    $subCategory = htmlspecialchars($row['sub_category']);
+                    $quantity = htmlspecialchars($row['quantity']);
+
+                    echo "<tr>
+                            <td>".$iName."</td>
+                            <td>".$category."</td>
+                            <td>".$subCategory."</td>
+                            <td>".$quantity."</td>
+                          </tr>";
+                }
+            } else {
+                // No rows found
                 echo "<tr>
-                <td>".$iName."</td>
-                <td>".$category."</td>
-                <td>".$subCategory."</td>
-                <td>".$quantity."</td>
-            </tr>";
+                        <td colspan='4'>No data found</td>
+                      </tr>";
+            }
 
-        }
-        }else{
-            echo "<tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                
-            </tr>";
+            // Close the statement
+            $stmt->close();
+        } else {
+            echo "Error: " . $con->error;
         }
     }
-
 ?>
+
 <!DOCTYPE html>
 <html>
 

@@ -3,7 +3,6 @@
     
     $districtArr = array('Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar', 'Matale', 'Matara', 'Moneragala', 'Mullaitivu', 'Nuwara Eliya', 'Polonnaruwa', 'Puttalam', 'Rathnapura', 'Vavuniya');
 
-
     function invoiceReport(){
         global $con;
         global $districtArr;
@@ -11,57 +10,74 @@
         $start = '2000-01-01';
         $to = date('Y').'-'.date('m').'-'.date('d');
 
-        if(isset($_POST['sbm_search'])){
+        if (isset($_POST['sbm_search'])) {
             $start = $_POST['start'];
             $to = $_POST['to'];
         }
 
-        $sql = "SELECT * FROM invoice i, customer c WHERE i.customer = c.id and date between '$start' and '$to'";
-    
-        $result = $con->query($sql);
-    
-        if($result->num_rows > 0){
-            //read data
-            while($row = $result->fetch_assoc()){
-                //read and utilize the row data
-                $id = $row['id'];
-                $invoiceNo =$row['invoice_no'];
-                $date = $row['date'];
-                $title = $row['title'];
-                $fname = $row['first_name'];
-                $mname = $row['middle_name'];
-                $lname = $row['last_name'];
-                $district = $row['district'];
-                $iCount = $row['item_count'];
-                $amount = $row['amount'];
+        // Prepare the SQL query to avoid SQL injection
+        $sql = "SELECT i.*, c.* FROM invoice i 
+                JOIN customer c ON i.customer = c.id 
+                WHERE i.date BETWEEN ? AND ?";
+        
+        // Prepare the statement
+        if ($stmt = $con->prepare($sql)) {
+            // Bind the parameters (s for string, here the date is treated as a string)
+            $stmt->bind_param("ss", $start, $to);
+            
+            // Execute the statement
+            $stmt->execute();
+            
+            // Get the result
+            $result = $stmt->get_result();
+            
+            // Check if any rows are returned
+            if ($result->num_rows > 0) {
+                // Read data
+                while ($row = $result->fetch_assoc()) {
+                    // Read and utilize the row data
+                    $id = htmlspecialchars($row['id']);
+                    $invoiceNo = htmlspecialchars($row['invoice_no']);
+                    $date = htmlspecialchars($row['date']);
+                    $title = htmlspecialchars($row['title']);
+                    $fname = htmlspecialchars($row['first_name']);
+                    $mname = htmlspecialchars($row['middle_name']);
+                    $lname = htmlspecialchars($row['last_name']);
+                    $district = htmlspecialchars($row['district']);
+                    $iCount = htmlspecialchars($row['item_count']);
+                    $amount = htmlspecialchars($row['amount']);
 
-                $fullName = $title.'.'.' '.$fname.' '.$mname.' '.$lname;
-                $district = $districtArr[$district - 1];
+                    // Format the full name
+                    $fullName = $title . '. ' . $fname . ' ' . $mname . ' ' . $lname;
+                    // Convert district ID to district name
+                    $districtName = $districtArr[$district - 1];
 
+                    // Output the table row
+                    echo "<tr>
+                        <td>{$invoiceNo}</td>
+                        <td>{$date}</td>
+                        <td>{$fullName}</td>
+                        <td>{$districtName}</td>
+                        <td>{$iCount}</td>
+                        <td>{$amount}</td>
+                    </tr>";
+                }
+            } else {
+                // No rows found
                 echo "<tr>
-                <td>".$invoiceNo."</td>
-                <td>".$date."</td>
-                <td>".$fullName."</td>
-                <td>".$district."</td>
-                <td>".$iCount."</td>
-                <td>".$amount."</td>
-                
-            </tr>";
+                    <td colspan='6'>No records found</td>
+                </tr>";
+            }
 
-        }
-        }else{
-            echo "<tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                
-            </tr>";
+            // Close the statement
+            $stmt->close();
+        } else {
+            // Error in preparing the SQL statement
+            echo "Error: " . $con->error;
         }
     }
-
 ?>
+
 <!DOCTYPE html>
 <html>
 

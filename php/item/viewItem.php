@@ -13,16 +13,16 @@
             //read data
             while($row = $result->fetch_assoc()){
                 //read and utilize the row data
-                $id = $row['id'];
-                $icode =$row['item_code'];
-                $category = $row['item_category'];
-                $subcategory = $row['item_subcategory'];
-                $iname = $row['item_name'];
-                $quantity = $row['quantity'];
-                $uprice = $row['unit_price'];
+                $id = htmlspecialchars($row['id']);
+                $icode = htmlspecialchars($row['item_code']);
+                $category = htmlspecialchars($row['item_category']);
+                $subcategory = htmlspecialchars($row['item_subcategory']);
+                $iname = htmlspecialchars($row['item_name']);
+                $quantity = htmlspecialchars($row['quantity']);
+                $uprice = htmlspecialchars($row['unit_price']);
 
-                $category = $categoryArr[$category - 1];
-                $subcategory = $subcategoryArr[$subcategory - 1];
+                $category = htmlspecialchars($categoryArr[$category - 1]);
+                $subcategory = htmlspecialchars($subcategoryArr[$subcategory - 1]);
                 echo "<tr>
                 <td>".$id."</td>
                 <td>".$icode."</td>

@@ -1,23 +1,42 @@
 <?php
 
-    // Check if the request method is POST
+session_start();
+
+// Generate CSRF token if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Check if the request method is POST
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Creating the connection
-    $conn = new mysqli("localhost:3306", "root", "", "assignment");
+    $conn = new mysqli("localhost:3306", "root", "root", "assignment");
 
     // Checking the connection
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
 
-    // Sanitize input data to prevent SQL Injection
-    $title = $conn->real_escape_string($_POST["title"]);
-    $fname = $conn->real_escape_string($_POST["fname"]);
-    $mname = $conn->real_escape_string($_POST["mname"]);
-    $lname = $conn->real_escape_string($_POST["lname"]);
-    $contactNum = $conn->real_escape_string($_POST["contactNum"]);
-    $district = $conn->real_escape_string($_POST["district"]);
+    // Sanitize input data to prevent SQL Injection and ensure safe output
+    $title = $conn->real_escape_string(trim($_POST["title"]));
+    $fname = $conn->real_escape_string(trim($_POST["fname"]));
+    $mname = $conn->real_escape_string(trim($_POST["mname"]));
+    $lname = $conn->real_escape_string(trim($_POST["lname"]));
+    $contactNum = $conn->real_escape_string(trim($_POST["contactNum"]));
+    $district = $conn->real_escape_string(trim($_POST["district"]));
+
+    // Basic validation checks for required fields and proper formats
+    if (empty($title) || empty($fname) || empty($lname) || empty($contactNum) || empty($district)) {
+        echo "All required fields must be filled.";
+        exit;
+    }
+
+    // Validate contact number (e.g., ensuring it's numeric)
+    if (!is_numeric($contactNum) || strlen($contactNum) > 10) {
+        echo "Invalid contact number.";
+        exit;
+    }
 
     // Prepare the SQL statement
     $stmt = $conn->prepare("INSERT INTO Customer (title, first_name, middle_name, last_name, contact_no, district) VALUES (?, ?, ?, ?, ?, ?)");
